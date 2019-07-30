@@ -102,11 +102,13 @@ def M100monitoredTakeoff():
     
     rospy.sleep(0.01)
 
-    # Step 1: If M100 is not in the air after 10 seconds, fail.
-    while ((rospy.Time.now() - start_time) < rospy.Duration(10)):
+    # If M100 is not in the air after 10 seconds, fail.
+    while ((rospy.Time.now() - start_time) < rospy.Duration(15)):
         rospy.sleep(0.01)
+        print flight_status
+        print current_gps.altitude - home_altitude
 
-    if(flight_status != flight_status_enum.M100_STATUS_IN_AIR and current_gps.altitude - home_altitude < 1.0):
+    if(flight_status != flight_status_enum.M100_STATUS_IN_AIR or current_gps.altitude - home_altitude < 0.8):
         rospy.logerr("Takeoff failed.")
         return False
     else:
@@ -166,18 +168,32 @@ def talker():
 
 
     rate = rospy.Rate(10) # 10hz
-    while(not gps_ready):
+    while(not gps_ready):	### TODO: really check actual GPS
         rospy.sleep(0.01)
     print("STARTED")
-    print obtain_control()
-    print is_M100()
-
+    ret = is_M100()
+    print ret
+    if not ret:
+    	rospy.logerr("Drone is not M100!")
+    	return
+    ret = obtain_control()
+    print ret
+    if not ret:
+    	rospy.logerr("Cannot obtain control!")
+    	return
     print "taking off..."
-    print M100monitoredTakeoff()
+    ret = M100monitoredTakeoff()
+    if not ret:
+    	rospy.logerr("Cannot takeoff!")
+    	return
     print "done"
     rospy.sleep(1)
     print "landing"
-    print M100monitoredLand()
+    ret = M100monitoredLand()
+    print ret
+    if not ret:
+    	rospy.logerr("Cannot land!")
+    	return
     print "done"
 
 

@@ -104,10 +104,10 @@ def M100monitoredTakeoff():
     rospy.sleep(0.01)
 
     # Step 1: If M100 is not in the air after 10 seconds, fail.
-    while ((rospy.Time.now() - start_time) < rospy.Duration(10)):
+    while ((rospy.Time.now() - start_time) < rospy.Duration(15)):
         rospy.sleep(0.01)
 
-    if(flight_status != flight_status_enum.M100_STATUS_IN_AIR and current_gps.altitude - home_altitude < 1.0):
+    if(flight_status != flight_status_enum.M100_STATUS_IN_AIR or current_gps.altitude - home_altitude < 0.8):
         rospy.logerr("Takeoff failed.")
         return False
     else:
@@ -170,16 +170,29 @@ def talker():
     while(not gps_ready):
         rospy.sleep(0.01)
     print("STARTED")
-    print obtain_control()
-    print is_M100()
-
+    ret = is_M100()
+    print ret
+    if not ret:
+        rospy.logerr("Drone is not M100!")
+        return
+    ret = obtain_control()
+    print ret
+    if not ret:
+        rospy.logerr("Cannot obtain control!")
+        return
     print "taking off..."
-    print M100monitoredTakeoff()
+    ret = M100monitoredTakeoff()
+    if not ret:
+        rospy.logerr("Cannot takeoff!")
+        return
     print "done"
     rospy.sleep(1)
     # print "landing"
-    # print M100monitoredLand()
-    # print "done"
+    # ret = M100monitoredLand()
+    # print ret
+    # if not ret:
+    #     rospy.logerr("Cannot land!")
+    #     return
     counter = 0
     state = 1
     brake = False 
@@ -188,13 +201,15 @@ def talker():
         print state, counter 
 
         counter+=1
-        if counter > 150:
+        if counter > 100:
             state+=1
             brake = False 
             counter = 0
+            # if state == 2:
+            #     state = 8
             if state == 9:
                 state = 1
-        elif counter > 100:
+        elif counter > 70:
             brake = True 
 
         if brake:
@@ -202,20 +217,20 @@ def talker():
             command.axes = [0,0,0,0]
         elif state == 1:
             print "moving z + "
-            command.axes = [0,0,1,0]
+            command.axes = [0,0,0.5,0]
             counter+=1
         elif state == 2:
             print "moving x + "
-            command.axes = [1,0,0,0]
+            command.axes = [0.5,0,0,0]
         elif state == 3:
             print "moving x - "
-            command.axes = [-1,0,0,0]
+            command.axes = [-0.5,0,0,0]
         elif state == 4:
             print "moving y + "
-            command.axes = [0,1,0,0]
+            command.axes = [0,0.5,0,0]
         elif state == 5:
             print "moving y - "
-            command.axes = [0,-1,0,0]
+            command.axes = [0,-0.5,0,0]
         elif state == 6:
             print "moving yaw + "
             command.axes = [0,0,0,0.5]

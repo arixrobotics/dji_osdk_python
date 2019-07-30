@@ -1,0 +1,69 @@
+Written: 14/2/2019
+Updated: 15/2/2019 after test
+
+Test procedure:
+
+Setup:
+1. Power up wifi router
+2. Power up drone
+
+3. Connect laptop to wifi router
+	- check ip address 192.168.1.147
+	- if changed, modify in ~/.bashrc
+
+4. Ping drone 192.168.1.170
+
+5. ssh into drone 
+	$ ssh ubuntu@192.168.1.170
+	password: ubuntu
+
+6. in drone, launch dji_sdk
+	$ roslaunch dji_sdk sdk.launch
+
+7. on laptop, test topics
+	$ rostopic list
+
+8. test for gps
+	$ rostopic echo /dji_sdk/gps_health 
+	data = 5 is best
+
+9. test for take off and landing
+	$ rosrun my_dji test_takeoff_land.py 
+
+10. test for velocity control
+	Note which direction the drone moves to. 
+	$ rosrun my_dji test_move_around.py 
+	1. take off
+	2. z+ go up
+	3. x+ forward
+	4. x- reverse
+	5. y+ left
+	6. y- right
+	7. yaw+ ccw
+	8. yaw- cw
+
+11. collect data for sonar
+	on drone;
+	$ sudo chmod 666 /dev/ttyACM0
+	$ rosrun rosserial_python serial_node.py /dev/ttyACM0
+	make sure data is there;
+	$ rostopic echo /ultrasound
+
+12. manually take off and hover at a certain height < 3.5 m. prefereably 2 m
+
+13. republish sonar reading on laptop
+	$ rosrun topic_tools relay ultrasound ultrasound_2
+
+14. ON DRONE record bag
+	$ rosbag record --all
+
+DONE. 
+
+
+RESULT:
+- take off and landing ok.
+- try to make landing smoother. maybe slowly go to height 1m, then call landing. 
+- speed of 0.5 m/s is ok
+- when yaw+; when turning seems fine, but when braking, it goes down almost until ~1m above ground
+- then when yaw-; it goes up again. 
+- sometimes the altitude fluctuates quite a lot when moving in x / y direction. Myabe need a better altitude control.
