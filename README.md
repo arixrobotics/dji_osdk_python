@@ -1,5 +1,4 @@
-# my_dji  
-
+# dji_osdk_python 
 
 
 Controlling the DJI M100 drone using Python.   
